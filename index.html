@@ -1,18 +1,21 @@
 <!doctype html>
-<meta charset='utf8'/>
+<meta charset="utf8"/>
 <html>
 <head>
 	<title>GMASK</title>
-	<script src='jquery-1.7.2.js' type='text/javascript'></script>
-	<link rel='stylesheet' href='style.css' type='text/css' media='all'/>
-	<script src='gmask.js' type='text/javascript'></script>
+	<script src="jquery-1.7.2.js" type="text/javascript"></script>
+	<link rel="stylesheet" href="style.css" type="text/css" media="all"/>
+	<script src="gmask.js" type="text/javascript"></script>
 </head>
 <body>
 <div>
-	<canvas id='cnvs'></canvas>
+	<a href="#" onClick="window.rotateRGB();">Rotate RGB</a>
+	<a href="#" onClick="window.negative();">Negative</a>
+	<a href="#" onClick="window.undo();">Undo</a>
 </div>
-<div id='resultBox'>
-	
+<div>
+	<canvas id="cnvs1"></canvas>
+	<canvas id="cnvs2"></canvas>
 </div>
 </body>
 </html>
