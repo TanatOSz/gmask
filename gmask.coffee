@@ -5,7 +5,7 @@ cnvs2 = {}
 undoStack = []
 
 debugging = on
-disableDebugFor = ['animateBand', 'getMouse', 'updateMouse','drawBand']
+disableDebugFor = ['animateBand', 'getMouse', 'updateMouse','drawBand', 'readSelection', 'writeSelection', 'startSelection', 'endSelection']
 debug = (funcName, args...) ->
 	if debugging and funcName not in disableDebugFor
 		console.log(funcName, args)
@@ -88,7 +88,7 @@ drawBand = (band) ->
 	ctx2.clearRect(0,0,cnvs2.width,cnvs2.height)
 	ctx2.strokeRect(band.x, band.y, band.w, band.h)
 
-## filters
+## masks
 # rotate RGB CCW (on RGB wheel)
 rotateRGB = (band=gBand, isUndo=no) ->
 	debug('rotateRGB', band, isUndo)
@@ -106,7 +106,35 @@ rotateRGB = (band=gBand, isUndo=no) ->
 	if not isUndo then undoStack.push({'band':band, 'filters':[rotateRGB, rotateRGB]})
 	writeSelection(band,imgData)
 
-# RGB negative filter
+#XOR 0x80
+xor80 = (band=gBand, isUndo=no) ->
+	debug('xor80', band, isUndo)
+	imgData = readSelection(band)
+	for i in [0 .. imgData.data.length-1]
+		if i % 4 != 3
+			imgData.data[i] ^= 128
+	if not isUndo then undoStack.push({'band':band, 'filters':[xor80]})
+	writeSelection(band,imgData)
+
+#Flip up-down
+flipud = (band=gBand, isUndo=no) ->
+	debug('flipud',band,isUndo)
+	imgData = readSelection(band)
+
+#Flip left-right
+fliplr = (band=gBand, isUndo=no) ->
+	debug('fliplr',band,isUndo)
+	imgData = readSelection(band)
+	for i in [0 .. imgData.data.length-1] by (4 * imgData.width) #row
+		for p in [0..(4*imgData.width)/2-1] by 4 #pixel
+			for s in [0 .. 3] #subpixel
+				temp = imgData.data[i+p+s]
+				imgData.data[i+p+s] = imgData.data[i+(4*imgData.width-1)-(p+3)+s]
+				imgData.data[i+(4*imgData.width-1)-(p+3)+s] = temp
+	if not isUndo then undoStack.push({'band':band, 'filters':[fliplr]})
+	writeSelection(band,imgData)
+
+# Negative
 negative = (band=gBand, isUndo=no) ->
 	debug('negative', band, isUndo)
 	imgData = readSelection(band)
@@ -120,7 +148,7 @@ negative = (band=gBand, isUndo=no) ->
 	if not isUndo then undoStack.push({'band':band,'filters':[negative]})
 	writeSelection(band,imgData)
 
-# Vertical Glass filter
+# Vertical Glass Blocks
 vGlass = (band=gBand, isUndo=no) ->
 	debug('vGlass', band, isUndo)
 	imgData= readSelection(band)
@@ -136,7 +164,7 @@ vGlass = (band=gBand, isUndo=no) ->
 	if not isUndo then undoStack.push({'band':band,'filters':[vGlass]})
 	writeSelection(band,imgData)
 
-# Horizontal Glass filter
+# Horizontal Glass Blocks
 hGlass = (band=gBand, isUndo=no) ->
 	debug('hGlass', band, isUndo)
 	imgData= readSelection(band)
@@ -153,6 +181,38 @@ hGlass = (band=gBand, isUndo=no) ->
 				imgData.data[i+((7-rowIdx)*4*imgData.width)+subpixelIdx] = rows[rowIdx][subpixelIdx]
 	if not isUndo then undoStack.push({'band':band,'filters':[hGlass]})
 	writeSelection(band,imgData)
+
+# Win
+win = (band=gBand, isUndo=no) ->
+	debug('win', band, isUndo)
+	if not isUndo then undoStack.push({'band':band,'filters':[win]})
+	writeSelection(band,imgData)
+
+# Meko+
+mekoplus = (band=gBand, isUndo=no) ->
+	debug('mekoplus', band, isUndo)
+	if not isUndo then undoStack.push({'band':band,'filters':[mekominus]})
+	writeSelection(band,imgData)
+
+# Meko-
+mekominus = (band=gBand, isUndo=no) ->
+	debug('mekominus', band, isUndo)
+	if not isUndo then undoStack.push({'band':band,'filters':[mekoplus]})
+	writeSelection(band,imgData)
+
+# FL
+fl = (band=gBand, isUndo=no) ->
+	debug('fl', band, isUndo)
+	if not isUndo then undoStack.push({'band':band,'filters':[fl]})
+	writeSelection(band,imgData)
+
+# Q0
+q0 = (band=gBand, isUndo=no) ->
+	debug('q0', band, isUndo)
+	hGlass(band, yes)
+	vGlass(band, yes)
+	negative(band, yes)
+	if not isUndo then undoStack.push({'band':band, 'filters':[q0]})
 
 # Undo the last change
 undo = ->
@@ -187,12 +247,20 @@ window.onload = ->
 		gBand.h = img.height - (img.height%8)
 		ctx1.drawImage(img, 0, 0)
 		drawBand(gBand)
-	img.src = 'test.jpg'
+	img.src = 'test.png'
 
 # set globals for the HTML
 window.rotateRGB = rotateRGB
+window.xor80 = xor80
+window.flipud = flipud
+window.fliplr = fliplr
 window.negative = negative
 window.vGlass = vGlass
 window.hGlass = hGlass
+window.win = win
+window.mekominus = mekominus
+window.mekoplus = mekoplus
+window.fl = fl
+window.q0 = q0
 window.undo = undo
 window.revert = revert
