@@ -120,17 +120,24 @@ xor80 = (band=gBand, isUndo=no) ->
 flipud = (band=gBand, isUndo=no) ->
 	debug('flipud',band,isUndo)
 	imgData = readSelection(band)
+	for r in [0 .. imgData.data.length/2-1] by (4*imgData.width) #row
+		for s in [0..4*imgData.width-1] #subpixel
+			temp = imgData.data[r+s]
+			imgData.data[r+s] = imgData.data[(imgData.height-1)*imgData.width*4-r+s]
+			imgData.data[(imgData.height-1)*imgData.width*4-r+s] = temp
+	if not isUndo then undoStack.push({'band':band, 'filters':[flipud]})
+	writeSelection(band,imgData)
 
 #Flip left-right
 fliplr = (band=gBand, isUndo=no) ->
 	debug('fliplr',band,isUndo)
 	imgData = readSelection(band)
-	for i in [0 .. imgData.data.length-1] by (4 * imgData.width) #row
+	for r in [0 .. imgData.data.length-1] by (4 * imgData.width) #row
 		for p in [0..(4*imgData.width)/2-1] by 4 #pixel
 			for s in [0 .. 3] #subpixel
-				temp = imgData.data[i+p+s]
-				imgData.data[i+p+s] = imgData.data[i+(4*imgData.width-1)-(p+3)+s]
-				imgData.data[i+(4*imgData.width-1)-(p+3)+s] = temp
+				temp = imgData.data[r+p+s]
+				imgData.data[r+p+s] = imgData.data[r+(4*imgData.width-1)-(p+3)+s]
+				imgData.data[r+(4*imgData.width-1)-(p+3)+s] = temp
 	if not isUndo then undoStack.push({'band':band, 'filters':[fliplr]})
 	writeSelection(band,imgData)
 
