@@ -87,7 +87,7 @@ drawBand = (band) ->
 ## filters
 # rotate RGB CCW (on RGB wheel)
 rotateRGB = (band=gBand, isUndo=no) ->
-	debug('rotateRGB', band)
+	debug('rotateRGB', band, isUndo)
 	imgData = readSelection(band)
 	for i in [0 .. imgData.data.length-1] by 4
 		rValue = imgData.data[i]
@@ -104,7 +104,7 @@ rotateRGB = (band=gBand, isUndo=no) ->
 
 # RGB negative filter
 negative = (band=gBand, isUndo=no) ->
-	debug('negative', band)
+	debug('negative', band, isUndo)
 	imgData = readSelection(band)
 	for i in [0 .. imgData.data.length-1] by 4
 		rValue = imgData.data[i]
@@ -116,10 +116,89 @@ negative = (band=gBand, isUndo=no) ->
 	if not isUndo then undoStack.push({'band':band,'filters':[negative]})
 	writeSelection(band,imgData)
 
+# Vertical Glass filter
+vGlass = (band=gBand, isUndo=no) ->
+	debug('vGlass', band, isUndo)
+	imgData= readSelection(band)
+	for i in [0 .. imgData.data.length-1] by (4 * 8)
+		r0 = imgData.data[i+0]
+		g0 = imgData.data[i+1]
+		b0 = imgData.data[i+2]
+		a0 = imgData.data[i+3]
+		r1 = imgData.data[i+4]
+		g1 = imgData.data[i+5]
+		b1 = imgData.data[i+6]
+		a1 = imgData.data[i+7]
+		r2 = imgData.data[i+8]
+		g2 = imgData.data[i+9]
+		b2 = imgData.data[i+10]
+		a2 = imgData.data[i+11]
+		r3 = imgData.data[i+12]
+		g3 = imgData.data[i+13]
+		b3 = imgData.data[i+14]
+		a3 = imgData.data[i+15]
+		r4 = imgData.data[i+16]
+		g4 = imgData.data[i+17]
+		b4 = imgData.data[i+18]
+		a4 = imgData.data[i+19]
+		r5 = imgData.data[i+20]
+		g5 = imgData.data[i+21]
+		b5 = imgData.data[i+22]
+		a5 = imgData.data[i+23]
+		r6 = imgData.data[i+24]
+		g6 = imgData.data[i+25]
+		b6 = imgData.data[i+26]
+		a6 = imgData.data[i+27]
+		r7 = imgData.data[i+28]
+		g7 = imgData.data[i+29]
+		b7 = imgData.data[i+30]
+		a7 = imgData.data[i+31]
+		imgData.data[i+0] = r7 
+		imgData.data[i+1] = g7
+		imgData.data[i+2] = b7
+		imgData.data[i+3] = a7
+		imgData.data[i+4] = r6
+		imgData.data[i+5] = g6
+		imgData.data[i+6] = b6
+		imgData.data[i+7] = a6
+		imgData.data[i+8] = r5
+		imgData.data[i+9] = g5
+		imgData.data[i+10] = b5 
+		imgData.data[i+11] = a5
+		imgData.data[i+12] = r4
+		imgData.data[i+13] = g4
+		imgData.data[i+14] = b4
+		imgData.data[i+15] = a4
+		imgData.data[i+16] = r3
+		imgData.data[i+17] = g3
+		imgData.data[i+18] = b3
+		imgData.data[i+19] = a3
+		imgData.data[i+20] = r2
+		imgData.data[i+21] = g2
+		imgData.data[i+22] = b2
+		imgData.data[i+23] = a2
+		imgData.data[i+24] = r1
+		imgData.data[i+25] = g1
+		imgData.data[i+26] = b1
+		imgData.data[i+27] = a1
+		imgData.data[i+28] = r0
+		imgData.data[i+29] = g0
+		imgData.data[i+30] = b0
+		imgData.data[i+31] = a0
+	if not isUndo then undoStack.push({'band':band,'filters':[vGlass]})
+	writeSelection(band,imgData)
+
+# Undo the last change
 undo = ->
 	debug('undo')
 	step = undoStack.pop()
 	step.filters.map((x) -> x(step.band,yes))
+
+# Undo all changes
+revert = ->
+	debug('revert')
+	while(undoStack.length)
+		undo()
 
 ## 'ey yo, just set it off, man
 window.onload = ->
@@ -146,4 +225,6 @@ window.onload = ->
 # set globals for the HTML
 window.rotateRGB = rotateRGB
 window.negative = negative
+window.vGlass = vGlass
 window.undo = undo
+window.revert = revert
