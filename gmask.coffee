@@ -2,7 +2,6 @@ ctx1 = {}
 ctx2 = {}
 cnvs1 = {}
 cnvs2 = {}
-mouse = {'x':0, 'y':0}
 undoStack = []
 
 debugging = on
@@ -15,6 +14,7 @@ debug = (funcName, args...) ->
 origin = {'x':0, 'y':0}
 selecting = no
 gBand = {'x':0, 'y':0, 'w':0, 'h':0}
+mouse = {'x':0, 'y':0}
 
 readSelection = (band) ->
 	debug('readSelection', band)
@@ -57,7 +57,6 @@ startSelection = (e) ->
 endSelection = (e) ->
 	debug('endSelection', e)
 	selecting = no
-	readSelection(gBand)
 
 animateBand = ->
 	debug('animateBand')
@@ -68,13 +67,18 @@ animateBand = ->
 	y1 -= y1 % 8
 	x2 = Math.max(origin.x, pos.x)
 	x2 += 8 - (x2 % 8)
+	if x2 > cnvs1.width
+		x2 -= 8
 	y2 = Math.max(origin.y, pos.y)
 	y2 += 8 - (y2 % 8)
-	gBand =
-		x: x1
-		y: y1
-		w: x2 - x1
-		h: y2 - y1
+	if y2 > cnvs1.height
+		y2 -= 8
+	if x2 != x1 and y2 != y1
+		gBand =
+			x: x1
+			y: y1
+			w: x2 - x1
+			h: y2 - y1
 	if selecting
 		drawBand(gBand)
 		window.mozRequestAnimationFrame(animateBand)
@@ -123,20 +127,39 @@ vGlass = (band=gBand, isUndo=no) ->
 	for i in [0 .. imgData.data.length-1] by (4 * 8)
 		# hack to call slice on array-like object
 		subpixelVals = Array.prototype.slice.call(imgData.data,i,i+32)
-		for p in [0..31]
+		for subpixelIdx in [0..31]
 			# to preserve RGBA order
 			# 28, 29, 30, 31, 24, 25, 26, 27 ...
-			top = 4*Math.ceil((32-p)/4)-1
-			idx = top - (3-(p%4))
-			imgData.data[i+p] = subpixelVals[idx]
+			colEnd = 4*Math.ceil((32-subpixelIdx)/4)-1
+			colIdx = colEnd - (3-(subpixelIdx%4))
+			imgData.data[i+subpixelIdx] = subpixelVals[colIdx]
 	if not isUndo then undoStack.push({'band':band,'filters':[vGlass]})
+	writeSelection(band,imgData)
+
+# Horizontal Glass filter
+hGlass = (band=gBand, isUndo=no) ->
+	debug('hGlass', band, isUndo)
+	imgData= readSelection(band)
+	for i in [0 .. imgData.data.length-1] by (4 * imgData.width * 8)
+		rows = []
+		for j in [0..7]
+			rows.push( \
+			Array.prototype.slice.call( \
+			imgData.data
+			, i+(j*4*imgData.width)
+			, i+((j+1)*4*imgData.width)))
+		for rowIdx in [rows.length-1..0]
+			for subpixelIdx in [0..rows[rowIdx].length-1]
+				imgData.data[i+((7-rowIdx)*4*imgData.width)+subpixelIdx] = rows[rowIdx][subpixelIdx]
+	if not isUndo then undoStack.push({'band':band,'filters':[hGlass]})
 	writeSelection(band,imgData)
 
 # Undo the last change
 undo = ->
 	debug('undo')
-	step = undoStack.pop()
-	step.filters.map((x) -> x(step.band,yes))
+	if undoStack.length
+		step = undoStack.pop()
+		step.filters.map((x) -> x(step.band,yes))
 
 # Undo all changes
 revert = ->
@@ -160,8 +183,8 @@ window.onload = ->
 		cnvs1.height = img.height
 		cnvs2.width = img.width
 		cnvs2.height = img.height
-		gBand.w = img.width
-		gBand.h = img.height
+		gBand.w = img.width - (img.width%8)
+		gBand.h = img.height - (img.height%8)
 		ctx1.drawImage(img, 0, 0)
 		drawBand(gBand)
 	img.src = 'test.jpg'
@@ -170,5 +193,6 @@ window.onload = ->
 window.rotateRGB = rotateRGB
 window.negative = negative
 window.vGlass = vGlass
+window.hGlass = hGlass
 window.undo = undo
 window.revert = revert
