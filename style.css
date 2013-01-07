@@ -1,0 +1,17 @@
+div {
+position: relative;
+}
+
+canvas {
+	position: absolute;
+	left: 0px;
+	top: 0px;
+}
+
+#cnvs1 {
+	z-index: 0;
+}
+
+#cnvs2 {
+	z-index: 1;
+}
